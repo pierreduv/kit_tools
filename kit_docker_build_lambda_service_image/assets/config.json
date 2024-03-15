@@ -1,0 +1,65 @@
+{
+  "appTitle": "Pikobuz",
+  "contactUrl": "contact@pikobuz.com",
+  "websiteUrl": "https://www.pikobuz.com",
+  "apiBaseUrl": "https://8dmopp5if6.execute-api.ca-central-1.amazonaws.com/dev",
+  "imagesBaseUrl": "https://d13c0gnz0dbypc.cloudfront.net",
+  "spacyUrl": "http://3.99.159.154:8080/process/",
+  "pixabayApiKey": "31321498-bf668bb3ab3b14320e5863346",
+  "analytics": {
+    "providers": [
+      {
+        "name": "firebase"
+      }
+    ]
+  },
+  "auth": {
+    "defaultAuthorizationLevel": "member",
+    "logins": [
+      {
+        "role": "default",
+        "signUpEnabled": false,
+        "showStayConnectedOption": true,
+        "socialProvidersNames": [
+          "microsoft",
+          "google"
+        ],
+        "localizations": [
+          {
+            "key": "signInNotice",
+            "listId": "main",
+            "code": "signInNotice"
+          },
+          {
+            "key": "stayConnectedNotice",
+            "listId": "main",
+            "code": "stayConnectedNotice"
+          }
+        ]
+      }
+    ],
+    "providers": [
+      {
+        "name": "usernamePassword",
+        "attributes": [
+          {
+            "name": "emailWrapper",
+            "value": "managed@pikobuz.com"
+          }
+        ]
+      },
+      {
+        "name": "google",
+        "attributes": [
+          {
+            "name": "clientId",
+            "value": "973393712010-4lcrl4ilegkk75v35livio4gcebgs7vc.apps.googleusercontent.com"
+          }
+        ]
+      },
+      {
+        "name": "microsoft"
+      }
+    ]
+  }
+}
