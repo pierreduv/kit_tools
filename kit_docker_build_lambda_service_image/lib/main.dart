@@ -67,7 +67,6 @@ Future<void> buildAndDeployServices() async {
         .last;
     var serviceName = fileName.replaceEnd('.dart', '');
     var serviceSourceCode = file.readAsStringSync();
-    print (serviceName);
     await buildAndDeployService(serviceName, serviceSourceCode);
   }
   exit(0);
@@ -78,7 +77,6 @@ Future<void> buildAndDeployServices() async {
 Future<void> buildAndDeployService(String serviceName, String serviceSourceCode) async {
   print('-------------------------------------------------------');
   print(serviceName);
-  print(serviceSourceCode);
 
 
   // Create a temporary directory
@@ -118,6 +116,20 @@ Future<void> buildTemporaryDartProject(String serviceName, String serviceSourceC
   // Create build directory
   final binDir = Directory('${tempDir.path}/bin');
   binDir.createSync();
+
+  // create pubspec.yaml file
+  final pubspecYamlFile = File('${tempDir.path}/pubspec.yaml');
+  pubspecYamlFile.writeAsStringSync('''
+name: kit_lambda_sources
+description: A starting point for Dart libraries or applications.
+version: 1.0.0
+environment:
+  sdk: ^3.2.3
+dependencies:
+  kit_lambda_utils:
+    path: ../kit_lambda_utils
+''');
+
   print('Project "$serviceName" created in temporary directory!');
 }
 
@@ -128,24 +140,36 @@ Future<void> buildTemporaryDartProject(String serviceName, String serviceSourceC
 Future<void> buildTemporaryDockerfile(String serviceName, Directory tempDir) async {
   final dockerFile = File('${tempDir.path}/Dockerfile');
   dockerFile.writeAsStringSync('''
-FROM kit_lambda_utils as compiler
-WORKDIR /app
-COPY --from=kit_lambda_utils /app/bin/kit_lambda_utils .
+# use the official dart image
+FROM kit_lambda_utils
+WORKDIR /
+
+# create what's required for $serviceName
+WORKDIR /
+RUN mkdir -p app/$serviceName
+WORKDIR app/$serviceName
+RUN mkdir bin
+COPY lib lib
+COPY pubspec.yaml .
 RUN dart pub get
-RUN dart compile exe lib/main.dart -o ./bin/$serviceName
+RUN dart compile exe lib/$serviceName.dart -o bin/$serviceName
+
+# keep only the $serviceName executable
+FROM scratch
+COPY --from=0 /app/$serviceName/bin/$serviceName /app/$serviceName
+
+
+# include what's required for executing as a lambda
 FROM public.ecr.aws/lambda/provided:al2
-COPY --from=compiler app/bin/service_1 /bin/service_1
-ENTRYPOINT ["main"]
+COPY --from=1 /app/$serviceName /app/$serviceName
+ENTRYPOINT ["/app/$serviceName"]
+
 '''); // Modified to correct CMD usage for multi-stage builds
 
   print('Dockerfile created in temporary directory!');
 }
 
-/*
-FROM scratch
-COPY --from=compiler app/bin/$serviceName /bin/$serviceName
-RUN chmod +x ./bin/service_1
- */
+
 //----------------------------------------------------------------------------------------------------------------------
 Future<void> buildAndTagDockerImage(String serviceName, Directory tempDir) async {
   try {
@@ -220,7 +244,7 @@ Future<void> createLambda(String serviceName) async {
   }
   else {
     print('before function code.');
-    FunctionCode functionCode = FunctionCode(imageUri: '058264167383.dkr.ecr.ca-central-1.amazonaws.com/service_1:latest');
+    FunctionCode functionCode = FunctionCode(imageUri: '058264167383.dkr.ecr.ca-central-1.amazonaws.com/$serviceName:latest');
     print('before create function');
 
     await client.createFunction(
